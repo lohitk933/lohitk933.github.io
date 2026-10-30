@@ -1,0 +1,202 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Basket Assist Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: phone-sized concept app on the left, a live "how it decided" panel on the right; stacks on narrow screens. */
+:root{
+  --bg:#EFEBE0; --panel:#FAF7F0; --card:#FFFFFF; --ink:#1C2B4A; --muted:#6B6656; --line:#E3DCC8;
+  --accent:#1C2B4A; --accent-ink:#FFFFFF; --gold:#C9973C; --gold-soft:#F5E7C6; --ad:#EDE9DD; --ok:#2F7D5B; --warn:#B4472F;
+  --font:'Poppins',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0B1020; --panel:#121B30; --card:#1A2540; --ink:#F2EEE3; --muted:#A9A593; --line:#2B3858;
+  --accent:#EBC77A; --accent-ink:#121B30; --gold:#EBC77A; --gold-soft:#3A3320; --ad:#222C46; --ok:#6CC49A; --warn:#F0937E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1020; --panel:#121B30; --card:#1A2540; --ink:#F2EEE3; --muted:#A9A593; --line:#2B3858;
+  --accent:#EBC77A; --accent-ink:#121B30; --gold:#EBC77A; --gold-soft:#3A3320; --ad:#222C46; --ok:#6CC49A; --warn:#F0937E; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;
+  padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,390px) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:820px){.wrap{grid-template-columns:minmax(0,1fr)}}
+h1,h2,h3{margin:0;font-weight:600}
+.top{max-width:980px;margin:0 auto 14px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.top h1{font-size:18px}.top p{margin:0;color:var(--muted);font-size:12px;max-width:60ch}
+.scen{display:flex;flex-wrap:wrap;gap:6px;max-width:980px;margin:0 auto 16px}
+.scen button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer}
+.scen button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.phone{background:var(--panel);border:1px solid var(--line);border-radius:26px;overflow:hidden;display:flex;flex-direction:column;height:760px;max-height:calc(100vh - 140px);min-height:560px}
+.bar{background:var(--accent);color:var(--accent-ink);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.bar b{font-size:14px}.bar small{opacity:.8;font-size:11px;display:block}
+.bar button{font:inherit;font-size:12px;background:transparent;border:1px solid currentColor;color:inherit;border-radius:8px;padding:5px 10px;cursor:pointer}
+.scroll{flex:1;overflow-y:auto;padding:12px 14px 16px;display:flex;flex-direction:column;gap:12px}
+.search{width:100%;font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:10px 12px;border-radius:12px;text-align:left;cursor:pointer;color:var(--muted)}
+.lab{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center;margin:0 0 6px}
+.row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.tile{flex:0 0 118px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:4px}
+.ico{font-size:26px;line-height:1;height:34px}
+.tile .n{font-size:12px;font-weight:500;min-height:34px}.tile .r{font-size:10.5px;color:var(--muted);min-height:28px}
+.pr{font-weight:600;font-size:13px}
+.add{font:inherit;font-size:12px;font-weight:500;border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;padding:5px 0;cursor:pointer;width:100%}
+.step{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--accent);border-radius:8px;overflow:hidden}
+.step button{font:inherit;font-size:16px;border:0;background:var(--accent);color:var(--accent-ink);width:34px;height:30px;cursor:pointer}
+.step span{font-weight:600;font-size:13px;min-width:24px;text-align:center}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.ci{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.ci:last-child{border-bottom:0}.ci .n{font-weight:500;font-size:13px}.ci .p{color:var(--muted);font-size:12px}
+.ci .step{width:96px}
+.sug{background:var(--gold-soft);border-radius:14px;padding:10px 12px;border:1px solid var(--line)}
+.sug .row{margin-top:2px}.sug .tile{background:var(--card)}
+.link{font:inherit;font-size:12px;border:0;background:none;color:var(--accent);text-decoration:underline;cursor:pointer;padding:0}
+.ad{background:var(--ad);border-radius:14px;padding:10px 12px;border:1px dashed var(--muted)}
+.pill{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:6px;background:var(--muted);color:var(--bg)}
+.bill{display:grid;gap:4px;font-size:13px}.bill div{display:flex;justify-content:space-between;font-variant-numeric:tabular-nums}
+.bill .t{font-weight:600;border-top:1px solid var(--line);padding-top:6px;margin-top:4px;font-size:14px}
+.note{font-size:11.5px;color:var(--muted)}
+.foot{padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
+.cta{font:inherit;font-weight:600;width:100%;border:0;border-radius:12px;padding:12px;background:var(--accent);color:var(--accent-ink);cursor:pointer;display:flex;justify-content:space-between}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px}
+.sw input{width:18px;height:18px;accent-color:var(--accent)}
+.toast{position:sticky;bottom:0;background:var(--ink);color:var(--bg);padding:8px 12px;border-radius:10px;font-size:12px;display:flex;justify-content:space-between;gap:10px}
+.toast button{font:inherit;background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chips button{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:8px 12px;border-radius:999px;cursor:pointer}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.side .card{padding:14px}
+.rules{margin:0;padding-left:18px;display:grid;gap:6px;font-size:12.5px}
+.log{font-family:var(--mono);font-size:11.5px;display:grid;gap:4px;max-height:260px;overflow:auto}
+.log div{border-left:3px solid var(--gold);padding-left:8px;overflow-wrap:anywhere}
+.log i{color:var(--muted);font-style:normal}
+.mock{font-size:11px;color:var(--muted);max-width:980px;margin:14px auto 0}
+</style>
+
+<div class="top">
+  <h1>Basket Assist, concept prototype</h1>
+  <p>Built by Lohit Kumar for a PM capstone. A concept, not the real Zepto app. Products, prices and history are mock data. Pick a situation, then use the phone.</p>
+</div>
+<div class="scen" id="scen" role="group" aria-label="Situation"></div>
+<div class="wrap">
+  <div class="phone" id="phone" aria-live="polite"></div>
+  <div class="side">
+    <div class="card"><h3 style="font-size:14px;margin-bottom:8px">The rules this prototype follows</h3>
+      <ol class="rules">
+        <li>Suggestions sit under the cart, never on top of it, and never stop checkout.</li>
+        <li>Three tiles at most. No timers, no stock scarcity, no pre-ticked items.</li>
+        <li>One item in the cart? The strip collapses to a quiet link. You are not penalised.</li>
+        <li>"I'm in a hurry" turns suggestions off for next time. One tap.</li>
+        <li>Removing is as easy as adding: the same stepper, plus Undo.</li>
+        <li>Sponsored items live in their own labelled box and never appear as a suggestion.</li>
+        <li>No progress bar to a free-delivery threshold. The delivery fee does not change when you add things.</li>
+      </ol></div>
+    <div class="card"><h3 style="font-size:14px;margin-bottom:8px">Events this session would send</h3>
+      <div class="log" id="log"><div><i>nothing yet</i> interact with the phone</div></div></div>
+  </div>
+</div>
+<p class="mock">Reasons shown on suggestion tiles are rule-based ("goes with", "your usual"), not claims about what other shoppers do. In the real product these would come from order history and item pairing, tested before launch.</p>
+
+<script>
+var P={
+ chips:{n:'Potato chips 52g',p:30,i:'🥔',pair:['cola','dip','popcorn']},
+ cola:{n:'Cold drink 750ml',p:45,i:'🥤',pair:['chips','popcorn','choc']},
+ choc:{n:'Dark chocolate',p:60,i:'🍫',pair:['cola','popcorn']},
+ dip:{n:'Cheese dip 200g',p:70,i:'🧀',pair:['chips']},
+ popcorn:{n:'Popcorn pack',p:45,i:'🍿',pair:['cola']},
+ milk:{n:'Milk 500ml',p:33,i:'🥛',pair:['tea','oats']},
+ tea:{n:'Tea leaves 250g',p:140,i:'🍵',pair:['milk']},
+ oats:{n:'Protein oats 1kg',p:260,i:'🌾',pair:['milk']},
+ batter:{n:'Dosa batter 1kg',p:70,i:'🥞',pair:['chutney','onion','ginger']},
+ chutney:{n:'Chutney mix',p:35,i:'🥥',pair:['batter']},
+ onion:{n:'Onion 1kg',p:42,i:'🧅',pair:['coriander','ginger']},
+ ginger:{n:'Ginger 100g',p:20,i:'🫚',pair:['onion']},
+ coriander:{n:'Coriander bunch',p:15,i:'🌿',pair:['onion']},
+ earbuds:{n:'C-type wired earphones',p:299,i:'🎧',pair:['pouch','aa']},
+ pouch:{n:'Earphone pouch',p:99,i:'👝',pair:['earbuds']},
+ aa:{n:'AA batteries x4',p:120,i:'🔋',pair:['earbuds']},
+ energy:{n:'Brand X energy drink',p:60,i:'⚡',pair:[]}
+};
+var SC={
+ movie:{t:'Movie night, 2 items',cart:{chips:1,cola:1},usuals:[['oats',24,21],['choc',9,14],['milk',3,4]]},
+ milk:{t:'Just milk, 1 item',cart:{milk:1},usuals:[['oats',24,21],['tea',27,30],['choc',9,14]]},
+ cook:{t:'Dosa batter, cooking now',cart:{batter:1},usuals:[['onion',6,7],['oats',24,21],['milk',3,4]]}
+};
+var S={sa:{},sc:'movie',scr:'home',cart:{},hurry:false,hide:false,open:false,undo:null,fb:null,placed:null,log:[]};
+try{S.hurry=localStorage.getItem('ba_hurry')==='1'}catch(e){}
+var DELIVERY=25;
+function $(q){return document.querySelector(q)}
+function inr(n){return '₹'+n}
+function ev(name,d){var t=new Date();S.log.unshift('<i>'+t.toLocaleTimeString([], {hour12:false})+'</i> '+name+' '+(d?JSON.stringify(d):''));S.log=S.log.slice(0,40);$('#log').innerHTML=S.log.map(function(x){return '<div>'+x+'</div>'}).join('')}
+function reset(k){S.sa={};S.sc=k;S.scr='home';S.cart=JSON.parse(JSON.stringify(SC[k].cart));S.open=false;S.hide=false;S.undo=null;S.fb=null;S.placed=null;S.log=[];$('#log').innerHTML='<div><i>nothing yet</i> interact with the phone</div>';draw();drawScen()}
+function drawScen(){$('#scen').innerHTML=Object.keys(SC).map(function(k){return '<button data-act="sc" data-k="'+k+'" aria-pressed="'+(k===S.sc)+'">'+SC[k].t+'</button>'}).join('')}
+function count(){var n=0;for(var k in S.cart)n+=S.cart[k];return n}
+function total(){var t=0;for(var k in S.cart)t+=S.cart[k]*P[k].p;return t}
+function distinct(){return Object.keys(S.cart).length}
+function suggest(){
+  if(S.hurry||S.hide)return [];
+  var out=[],ids=Object.keys(S.cart);
+  ids.forEach(function(id){P[id].pair.forEach(function(c){if(!S.cart[c]&&!out.some(function(o){return o.id===c}))out.push({id:c,why:'Goes with '+P[id].n.toLowerCase()})})});
+  var due=SC[S.sc].usuals.filter(function(u){return u[1]>=u[2]-3&&!S.cart[u[0]]});
+  var res=out.slice(0,due.length?2:3);
+  due.slice(0,3-res.length).forEach(function(u){res.push({id:u[0],why:'Your usual, about every '+u[2]+' days. Last bought '+u[1]+' days ago'})});
+  return res.slice(0,3);
+}
+function tile(id,why,act){var p=P[id];return '<div class="tile"><div class="ico">'+p.i+'</div><div class="n">'+p.n+'</div>'+(why?'<div class="r">'+why+'</div>':'')+'<div class="pr">'+inr(p.p)+'</div>'+stepper(id,true)+'</div>'}
+function stepper(id,compact){var q=S.cart[id]||0;return q?'<div class="step"><button data-act="dec" data-id="'+id+'" aria-label="Remove one '+P[id].n+'">−</button><span>'+q+'</span><button data-act="inc" data-id="'+id+'" aria-label="Add one '+P[id].n+'">+</button></div>':'<button class="add" data-act="inc" data-id="'+id+'" data-src="'+(compact?'tile':'list')+'">Add</button>'}
+function home(){
+  var us=SC[S.sc].usuals.map(function(u){var d=u[1]>=u[2]-3;return tile(u[0],d?'Due about now. Last bought '+u[1]+' days ago':'Last bought '+u[1]+' days ago')}).join('');
+  var all=Object.keys(P).filter(function(k){return k!=='energy'}).map(function(k){return '<div class="ci"><div class="ico" style="height:auto;font-size:22px">'+P[k].i+'</div><div><div class="n">'+P[k].n+'</div><div class="p">'+inr(P[k].p)+'</div></div><div class="step" style="border:0;width:96px;overflow:visible">'+stepper(k)+'</div></div>'}).join('');
+  return '<div class="bar"><div><b>Delivering in 10 min</b><small>Home, mock address</small></div></div><div class="scroll">'+
+   '<button class="search" data-act="srch">'+(S.open?'Search results (all items below)':'Search for anything')+'</button>'+
+   (S.open?'<div class="card">'+all+'</div>':
+   '<div><p class="lab"><span>Your usuals</span><span>from your past orders</span></p><div class="row">'+us+'</div></div>'+
+   '<div class="ad"><p class="lab"><span class="pill">Ad</span><span>Sponsored</span></p><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div>'+P.energy.i+' '+P.energy.n+' <b>'+inr(P.energy.p)+'</b></div><div style="width:92px">'+stepper('energy',true)+'</div></div></div>'+
+   '<div class="note">Everything on this screen is optional. Tap Search to see all items.</div>')+'</div>'+cartbar();
+}
+function cartbar(){var n=count();return '<div class="foot">'+(n?'<button class="cta" data-act="cart"><span>'+n+' item'+(n>1?'s':'')+' · '+inr(total())+'</span><span>View cart</span></button>':'<div class="note" style="text-align:center">Cart is empty. Items you add appear here.</div>')+'</div>'}
+function cart(){
+  var ids=Object.keys(S.cart);
+  var items=ids.map(function(id){return '<div class="ci"><div class="ico" style="height:auto;font-size:24px">'+P[id].i+'</div><div><div class="n">'+P[id].n+'</div><div class="p">'+inr(P[id].p)+' each</div></div>'+stepper(id)+'</div>'}).join('');
+  var sg=suggest(),box='';
+  if(S.hurry){box='<div class="note">Suggestions are off because you said you are in a hurry. <button class="link" data-act="hurry">Turn back on</button></div>'}
+  else if(distinct()===1&&!S.open){box='<div class="note"><button class="link" data-act="open">See what goes with this</button> (optional)</div>'}
+  else if(S.hide){box='<div class="note">Suggestions hidden for this order. <button class="link" data-act="show">Show again</button></div>'}
+  else if(sg.length){box='<div class="sug"><p class="lab"><span>Forgot anything?</span><button class="link" data-act="dismiss">Hide</button></p><div class="row">'+sg.map(function(s){return tile(s.id,s.why)}).join('')+'</div></div>'}
+  var ad=S.hurry?'':'<div class="ad"><p class="lab"><span class="pill">Ad</span><span>Sponsored, paid placement</span></p><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div>'+P.energy.i+' '+P.energy.n+' <b>'+inr(P.energy.p)+'</b></div><div style="width:92px">'+stepper('energy',true)+'</div></div><p class="note" style="margin:6px 0 0">This is an advertisement. It is not chosen from your cart.</p></div>';
+  var t=total();
+  return '<div class="bar"><div><b>Your cart</b><small>No minimum order</small></div><button data-act="home">Back</button></div><div class="scroll">'+
+   (ids.length?'<div class="card">'+items+'</div>':'<div class="card note">Your cart is empty. Go back to add items.</div>')+box+ad+
+   '<div class="card"><div class="bill"><div><span>Items</span><span>'+inr(t)+'</span></div><div><span>Delivery</span><span>'+inr(ids.length?DELIVERY:0)+'</span></div><div class="t"><span>To pay</span><span>'+inr(ids.length?t+DELIVERY:0)+'</span></div></div><p class="note" style="margin:6px 0 0">The delivery fee is the same for one item or ten.</p></div>'+
+   '<label class="sw card"><span>I’m in a hurry. Don’t show suggestions.</span><input type="checkbox" id="hurry" data-act="hurry" '+(S.hurry?'checked':'')+'></label>'+
+   (S.undo?'<div class="toast"><span>Removed '+P[S.undo].n+'</span><button data-act="undo">Undo</button></div>':'')+'</div>'+
+   '<div class="foot"><button class="cta" data-act="pay" '+(ids.length?'':'disabled style="opacity:.5"')+'><span>Place order</span><span>'+inr(ids.length?t+DELIVERY:0)+'</span></button></div>';
+}
+function done(){
+  var o=S.placed;
+  return '<div class="bar"><div><b>Order placed</b><small>Arriving in about 10 min</small></div></div><div class="scroll"><div class="card"><div class="lab"><span>Your order</span><span>'+inr(o.total)+'</span></div>'+o.lines.map(function(l){return '<div style="display:flex;justify-content:space-between;padding:3px 0"><span>'+l+'</span></div>'}).join('')+'</div>'+
+   '<div class="card"><div class="lab"><span>Next time</span></div><p class="note" style="margin:0">Items you bought are saved to your usuals, so a repeat order takes fewer taps. You can clear usuals any time.</p></div>'+
+   '<div class="card"><div class="lab"><span>Did the suggestions feel okay?</span></div><div class="chips"><button data-act="fb" data-v="fine">Fine</button><button data-act="fb" data-v="pushy">A bit pushy</button><button data-act="fb" data-v="useful">Useful</button></div>'+(S.fb?'<p class="note" style="margin:8px 0 0">Thanks. Recorded as "'+S.fb+'".</p>':'')+'</div>'+
+   '<button class="add" data-act="again">Start another order</button></div>';
+}
+function draw(){$('#phone').innerHTML=S.scr==='home'?home():S.scr==='cart'?cart():done()}
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-act]');if(!el)return;var a=el.dataset.act,id=el.dataset.id;
+  if(a==='sc'){reset(el.dataset.k);return}
+  if(a==='srch'){S.open=!S.open}
+  if(a==='show'){S.hide=false}
+  if(a==='open'){S.open=true;ev('suggestions_opened',{by:'user'})}
+  if(a==='dismiss'){S.hide=true;ev('suggestions_hidden_once')}
+  if(a==='cart'){S.scr='cart';S.undo=null;var s=suggest();ev('cart_viewed',{items:count(),value:total()});if(s.length&&!(distinct()===1))ev('suggestion_shown',{ids:s.map(function(x){return x.id}),sponsored:false})}
+  if(a==='home'){S.scr='home';S.undo=null}
+  if(a==='inc'){var fromSug=!!(el.closest('.sug'));S.cart[id]=(S.cart[id]||0)+1;S.undo=null;if(fromSug)S.sa[id]=Date.now();ev(fromSug?'suggestion_added':'item_added',{id:id,price:P[id].p,sponsored:id==='energy'})}
+  if(a==='dec'){S.cart[id]--;if(S.cart[id]<=0){delete S.cart[id];S.undo=id}var t0=S.sa[id];ev('item_removed',{id:id,after_suggestion:!!t0,secs_since_add:t0?Math.round((Date.now()-t0)/1000):null})}
+  if(a==='undo'){S.cart[S.undo]=1;ev('remove_undone',{id:S.undo});S.undo=null}
+  if(a==='hurry'){S.hurry=!S.hurry;try{localStorage.setItem('ba_hurry',S.hurry?'1':'0')}catch(x){}ev('hurry_mode_set',{on:S.hurry})}
+  if(a==='pay'){var lines=Object.keys(S.cart).map(function(k){return S.cart[k]+' x '+P[k].n});S.placed={total:total()+DELIVERY,lines:lines};ev('order_placed',{items:count(),aov:total()+DELIVERY});S.scr='done'}
+  if(a==='fb'){S.fb=el.dataset.v;ev('suggestion_feedback',{v:S.fb})}
+  if(a==='again'){reset(S.sc);return}
+  draw();
+});
+reset('movie');
+</script>
+
+</body></html>
